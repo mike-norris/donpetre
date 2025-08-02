@@ -1,6 +1,8 @@
 [submodule "donpetre-gateway"]
-	path = api-gateway
-	url = git@github.com:mike-norris/donpetre-gateway.git
+	path = donpetre-gateway
+  url = git@github.com:mike-norris/donpetre-gateway.git
+  branch = main
 [submodule "knowledge-ingestion"]
-	path = knowledge-ingestion
-	url = git@github.com:mike-norris/donpetre-knowledge-ingestion.git
+	path = donpetre-knowledge-ingestion
+  url = git@github.com:mike-norris/donpetre-knowledge-ingestion.git
+  branch = main
