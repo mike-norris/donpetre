@@ -1,0 +1,147 @@
+# docker-compose.yml - Complete DonPetre Platform
+# This file includes ALL services: postgresql, redis, api-gateway, and knowledge-ingestion
+services:
+  postgresql:
+    image: postgres:15-alpine
+    container_name: donpetre-db
+    environment:
+      POSTGRES_DB: donpetre
+      POSTGRES_USER: ${DB_USER:-don}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-don_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - donpetre-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U don -d donpetre"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: donpetre-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - donpetre-network
+    command: redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: donpetre-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+      # Database Configuration
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: donpetre
+      DB_USERNAME: ${DB_USER:-don}
+      DB_PASSWORD: ${DB_PASSWORD:-don_pass}
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # JWT Configuration
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-YourSecretKeyHere123456789012345678901234567890}
+      JWT_ALGORITHM: HS512
+      JWT_AUTO_GENERATE: ${JWT_AUTO_GENERATE:-false}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      R2DBC_LOG_LEVEL: ${R2DBC_LOG_LEVEL:-INFO}
+
+      # Security
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+
+      # JVM Options for Docker
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - donpetre-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  knowledge-ingestion:
+    build:
+      context: ./knowledge-ingestion
+      dockerfile: Dockerfile
+    container_name: donpetre-ingestion
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+      # Database Configuration
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: donpetre
+      DB_USERNAME: ${DB_USER:-don}
+      DB_PASSWORD: ${DB_PASSWORD:-don_pass}
+
+      # Security Configuration
+      GATEWAY_HOST: api-gateway
+      GATEWAY_PORT: 8080
+
+      # CRITICAL: Fix for the encryption error
+      # These must be valid hex strings for AES encryption
+      ENCRYPTION_PASSWORD: ${ENCRYPTION_PASSWORD:-deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef}
+      ENCRYPTION_SALT: ${ENCRYPTION_SALT:-cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      R2DBC_LOG_LEVEL: ${R2DBC_LOG_LEVEL:-INFO}
+
+      # JVM Options
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - donpetre-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  donpetre-network:
+    driver: bridge
+    name: donpetre-network
