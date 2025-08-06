@@ -4,9 +4,8 @@ services:
     container_name: donpetre-postgres
     environment:
       POSTGRES_DB: donpetre
-      POSTGRES_USER: ${DB_USER:-donpetre}
+      POSTGRES_USER: ${DB_USERNAME:-donpetre}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-donpetre_pass}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
     volumes:
@@ -16,16 +15,14 @@ services:
     networks:
       - donpetre-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-donpetre} -d donpetre"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-donpetre} -d donpetre"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   redis:
     image: redis:7-alpine
     container_name: donpetre-redis
-    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
     ports:
       - "6379:6379"
     volumes:
@@ -48,18 +45,11 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_HOST: postgresql
-      DB_PORT: 5432
-      DB_NAME: donpetre
-      DB_USERNAME: ${DB_USER:-donpetre}
+      DB_USERNAME: ${DB_USERNAME:-donpetre}
       DB_PASSWORD: ${DB_PASSWORD:-donpetre_pass}
       REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_BACKUP_SECRET: ${JWT_BACKUP_SECRET}
-      INGESTION_SERVICE_HOST: knowledge-ingestion
-      INGESTION_SERVICE_PORT: 8081
-      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
     depends_on:
       postgresql:
         condition: service_healthy
@@ -67,12 +57,6 @@ services:
         condition: service_healthy
     networks:
       - donpetre-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 90s
 
   knowledge-ingestion:
     build:
@@ -89,14 +73,7 @@ services:
       DB_USERNAME: ${DB_USER:-donpetre}
       DB_PASSWORD: ${DB_PASSWORD:-donpetre_pass}
       REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      JIRA_URL: ${JIRA_URL:-}
-      JIRA_USERNAME: ${JIRA_USERNAME:-}
-      JIRA_TOKEN: ${JIRA_TOKEN:-}
       ENCRYPTION_SECRET_KEY: ${ENCRYPTION_SECRET_KEY}
-      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
     depends_on:
       postgresql:
         condition: service_healthy
@@ -104,22 +81,13 @@ services:
         condition: service_healthy
     networks:
       - donpetre-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 90s
 
 volumes:
   postgres_data:
     driver: local
-    name: donpetre_postgres_data
   redis_data:
     driver: local
-    name: donpetre_redis_data
 
 networks:
   donpetre-network:
     driver: bridge
-    name: donpetre-network
