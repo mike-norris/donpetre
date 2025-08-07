@@ -8,4 +8,9 @@
   branch = main
 [submodule "donpetre-management-service"]
 	path = donpetre-management-service
-	url = git@github.com:mike-norris/donpetre-management-service.git
+  url = git@github.com:mike-norris/donpetre-management-service.git
+  branch = main
+[submodule "donpetre-search-service"]
+	path = donpetre-search-service
+  url = git@github.com:mike-norris/donpetre-search-service.git
+  branch = main
