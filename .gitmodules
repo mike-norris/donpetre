@@ -14,3 +14,7 @@
 	path = donpetre-search-service
   url = git@github.com:mike-norris/donpetre-search-service.git
   branch = main
+[submodule "donpetre-ui"]
+	path = donpetre-ui
+	url = git@github.com:mike-norris/donpetre-ui.git
+  branch = main
