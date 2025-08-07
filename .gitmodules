@@ -6,3 +6,6 @@
 	path = donpetre-knowledge-ingestion
   url = git@github.com:mike-norris/donpetre-knowledge-ingestion.git
   branch = main
+[submodule "donpetre-management-service"]
+	path = donpetre-management-service
+	url = git@github.com:mike-norris/donpetre-management-service.git

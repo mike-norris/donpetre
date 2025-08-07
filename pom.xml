@@ -54,6 +54,8 @@
     <modules>
         <module>donpetre-gateway</module>
         <module>donpetre-knowledge-ingestion</module>
+        <module>donpetre-management-service</module>
+        <module>donpetre-ui</module>
     </modules>
 
     <!-- Dependency Management - versions for all modules -->

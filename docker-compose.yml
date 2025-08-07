@@ -59,6 +59,10 @@ services:
       JWT_BACKUP_SECRET: ${JWT_BACKUP_SECRET}
       INGESTION_SERVICE_HOST: knowledge-ingestion
       INGESTION_SERVICE_PORT: 8081
+      MANAGEMENT_SERVICE_HOST: management-service
+      MANAGEMENT_SERVICE_PORT: 8082
+      SEARCH_SERVICE_HOST: search-service
+      SEARCH_SERVICE_PORT: 8083
       JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
     depends_on:
       postgresql:
@@ -110,6 +114,84 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
+
+  management-service:
+    build:
+      context: .
+      dockerfile: donpetre-management-service/Dockerfile
+    container_name: donpetre-management-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: donpetre
+      DB_USERNAME: ${DB_USER:-donpetre}
+      DB_PASSWORD: ${DB_PASSWORD:-donpetre_pass}
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - donpetre-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  search-service:
+    build:
+      context: donpetre-search-service/
+      dockerfile: Dockerfile
+    container_name: donpetre-search-service
+    ports:
+      - "8083:8083"
+    environment:
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: donpetre
+      DB_USERNAME: ${DB_USER:-donpetre}
+      DB_PASSWORD: ${DB_PASSWORD:-donpetre_pass}
+      SEARCH_SERVICE_HOST: 0.0.0.0
+      SEARCH_SERVICE_PORT: 8083
+      SEARCH_DEBUG: ${SEARCH_DEBUG:-false}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - donpetre-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  web-ui:
+    build:
+      context: ./donpetre-ui
+      dockerfile: Dockerfile
+    container_name: donpetre-ui
+    ports:
+      - "8084:80"
+    environment:
+      VITE_API_URL: http://localhost:8080/api
+      NGINX_HOST: 0.0.0.0
+      NGINX_PORT: 80
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - donpetre-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:

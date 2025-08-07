@@ -16,4 +16,14 @@ cd donpetre-knowledge-ingestion
 mvn clean package -DskipTests
 cd ..
 
+# Build management service
+cd donpetre-management-service
+mvn clean package -DskipTests
+cd ..
+
+# Build UI (React.js)
+cd donpetre-ui
+mvn clean package -DskipTests
+cd ..
+
 echo "✅ Build complete!"
