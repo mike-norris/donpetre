@@ -208,10 +208,10 @@ INSERT INTO tags (name, color, description) VALUES
     ('security', '#6c757d', 'Security related items')
 ON CONFLICT (name) DO NOTHING;
 
--- Create a default admin user (password: admin123)
+-- Create a default admin user (password: password123)
 -- Note: In production, this should be changed immediately
 INSERT INTO users (username, email, password_hash, first_name, last_name, is_admin) VALUES 
-    ('admin', 'admin@donpetre.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'User', true)
+    ('admin', 'admin@donpetre.com', '$2a$12$.SiNRaCuL/8jt.3i4Kt1hOfRc9shFqfJ8yaBaTcrAvMhYto9FxEDm', 'Admin', 'User', true)
 ON CONFLICT (username) DO NOTHING;
 
 -- Assign admin role to admin user
